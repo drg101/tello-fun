@@ -12,7 +12,7 @@ server.listen(socketPort, () => {
     console.log(`SERVER LISTENING ON ${socketPort}`)
 });
 
-class Tello {
+class TelloControl {
     constructor() {
         this.PORT = 8889;
         this.HOST = '192.168.10.1';
@@ -21,12 +21,16 @@ class Tello {
         this.client.on('message', (msg, info) => {
             console.log('Data received from drone : ' + msg.toString());
         });
+        this.client.on('listening', () => {
+            this.sendMessage('command')
+        });
     }
 
     sendMessage(commandStr) {
         console.log(`Command: ${commandStr}`);
-        if(commandStr === 'KILL') {
+        if (commandStr === 'KILL') {
             this.close();
+            telloState.kill();
             throw 'killed by client'
             return;
         }
@@ -40,12 +44,43 @@ class Tello {
     }
 }
 
-//const telloDrone = new Tello();
+class TelloState {
+    constructor() {
+        this.client = dgram.createSocket('udp4');
+        this.client.bind(8890);
+        this.client.on('error', (err) => {
+            console.log(`server error:\n${err.stack}`);
+            server.close();
+        });
+
+        this.client.on('message', (msg, rinfo) => {
+            console.log(`server got: ${msg} from ${rinfo.address}:${rinfo.port}`);
+        });
+
+        this.client.on('listening', () => {
+            const address = this.client.address();
+            console.log(`server listening ${address.address}:${address.port}`);
+        });
+        // this.client.on('message', (msg, info) => {
+        //     console.log('state received from drone : ' + msg.toString());
+        // });
+    }
+
+    kill() {
+        this.client.close();
+    }
+}
+
+const telloDroneControl = new TelloControl();
+let telloState;
+setTimeout(() => {
+    telloState = new TelloState();
+}, 5000)
 
 io.on('connection', client => {
     console.log("CLIENT CONNECTED")
     client.on('telloControl', data => {
-        telloDrone.sendMessage(data)
+        telloDroneControl.sendMessage(data)
     })
     client.on('disconnect', () => {
         console.log("CLIENT DISCONECTED")

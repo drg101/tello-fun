@@ -10,17 +10,13 @@ const socket = io("http://localhost:8080", {
 
 function App() {
     const [textFieldValue, setTextFieldValue] = useState('');
-    let commandCounter = 0;
 
     document.onkeypress = function (e) {
         e = e || window.event;
         // use e.keyCode
         if (e.key === 'Enter') {
             console.log(`EMMITING ${textFieldValue}`)
-            socket.emit('telloControl', { 
-                id: commandCounter++,
-                command: textFieldValue
-            })
+            socket.emit('telloControl', textFieldValue)
             setTextFieldValue('')
         }
     };
