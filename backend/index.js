@@ -30,7 +30,7 @@ class TelloControl {
         console.log(`Command: ${commandStr}`);
         if (commandStr === 'KILL') {
             this.close();
-            telloState.kill();
+            telloState.close();
             throw 'killed by client'
             return;
         }
@@ -66,7 +66,7 @@ class TelloState {
         // });
     }
 
-    kill() {
+    close() {
         this.client.close();
     }
 }
@@ -86,6 +86,12 @@ io.on('connection', client => {
         console.log("CLIENT DISCONECTED")
         //telloDrone.close();
     });
+});
+
+process.on('SIGINT', function() {
+    console.log("Caught interrupt signal");
+    telloState.close();
+    telloDroneControl.close();
 });
 
 
